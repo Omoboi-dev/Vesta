@@ -183,7 +183,7 @@ export function useDelegationSignature(config: DevDelegationConfig) {
         deployParams: [eoaAddress as `0x${string}`, [], [], []],
         deploySalt: DEPLOY_SALT,
       })
-
+      
       console.log("✍️ [useDelegationSignature] Initiating delegation signing...");
       console.log("📍 Agent Address:", agentAddress);
       console.log("👤 Smart Account:", userSmartAccount.address);

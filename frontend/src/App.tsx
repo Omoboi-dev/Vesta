@@ -20,13 +20,11 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* If connected, show Dashboard. Otherwise show SignIn. No redirect. */}
         <Route 
           path="/" 
           element={isConnected ? <VaultDashboard /> : <SignIn />} 
         />
         
-        {/* Compatible route if needed */}
         <Route 
           path="/sign-in" 
           element={!isConnected ? <SignIn /> : <Navigate to="/" replace />} 

@@ -1,11 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-// Using gemini-flash-latest as confirmed by list-models.ts
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -59,37 +54,73 @@ Required JSON structure:
 }
 `;
 
-  async chat(history: ChatMessage[], message: string, retryCount = 0): Promise<string> {
-    try {
-      const chat = model.startChat({
-        history: [
-          { role: "user", parts: [{ text: ChatService.systemPrompt }] },
-          { role: "model", parts: [{ text: "Hello! I am your DeFi Swap Assistant. Would you like to perform a token swap today?" }] },
-          ...history
-        ],
-      });
+  async chat(history: ChatMessage[], message: string): Promise<string> {
+    const baseUrl = process.env.ZG_SERVICE_URL;
+    const apiKey = process.env.ZG_API_KEY;
+    const model = process.env.ZG_MODEL;
 
-      const result = await chat.sendMessage(message);
-      const response = await result.response;
-      return response.text();
-    } catch (error: any) {
-      // 429 is "Too Many Requests" (Quota exceeded)
-      if (error?.status === 429) {
-        if (retryCount < 1) {
-            console.warn(`Rate limit hit (429). Staying active and retrying in 50 seconds per user requirement...`);
-            await new Promise(resolve => setTimeout(resolve, 50000));
-            return this.chat(history, message, retryCount + 1);
-        } else if (retryCount < 2) {
-             console.warn(`Rate limit hit again (429). Final retry attempt in 10 seconds...`);
-             await new Promise(resolve => setTimeout(resolve, 10000));
-             return this.chat(history, message, retryCount + 1);
-        } else {
-            return "I apologize, but my message quota is still active. Please give me a minute to refresh and then try sending your message again!";
+    if (!baseUrl || !apiKey || !model) {
+      throw new Error("Missing 0G configuration. Set ZG_SERVICE_URL, ZG_API_KEY, and ZG_MODEL.");
+    }
+
+    const messages = [
+      {
+        role: "system",
+        content: ChatService.systemPrompt.trim(),
+      },
+      ...history.map((entry) => ({
+        role: entry.role === "user" ? "user" : "assistant",
+        content: entry.parts.map((part) => part.text).join("\n"),
+      })),
+      {
+        role: "user",
+        content: message,
+      },
+    ];
+
+    try {
+      const response = await fetch(
+        `${baseUrl.replace(/\/$/, "")}/v1/proxy/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: 0.2,
+          }),
         }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`0G Compute request failed (${response.status}): ${errorText}`);
       }
-      
-      console.error("Gemini API Error:", error.message);
-      return "I'm having a bit of trouble connecting to my brain right now. Please try again in a moment!";
+
+      const data = (await response.json()) as {
+        choices?: Array<{
+          message?: {
+            content?: string;
+          };
+        }>;
+      };
+
+      const reply = data.choices?.[0]?.message?.content?.trim();
+      if (!reply) {
+        throw new Error("0G Compute returned an empty response");
+      }
+
+      return reply;
+    } catch (error: any) {
+      if (error?.status === 429) {
+        return "0G Compute is rate-limiting requests right now. Please wait a moment and try again.";
+      }
+
+      console.error("0G Compute API Error:", error.message);
+      return "I'm having a bit of trouble connecting to decentralized inference right now. Please try again in a moment!";
     }
   }
 }

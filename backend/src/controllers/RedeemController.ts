@@ -95,7 +95,7 @@ export const redeemSwap = async (req: Request, res: Response) => {
     console.log(`🔍 Resolved tokens: ${rawTokenIn} -> ${tokenIn}, ${rawTokenOut} -> ${tokenOut}`);
 
     const amountInBigInt = parseUnits(amountIn as string, Number(decimalsIn));
-    
+
     // 1. Get the current quote to determine amountOutMinimum (e.g., 0.5% slippage)
     console.log("📈 Fetching Uniswap quote...");
     const quote = await uniswapService.getQuote({
