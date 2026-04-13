@@ -1,12 +1,10 @@
 # VESTA: Agentic DeFi Flow 🚀
 
-![VESTA Banner](https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=2000)
-
 **Bridging the gap between human intent and autonomous execution via "One-Signature Swaps".**
 
 ---
 
-## 🌌 Overview
+## Overview
 
 **VESTA** is a modular, intent-driven DeFi middleware designed to eliminate the friction of manual on-chain interactions. By leveraging the **MetaMask Delegation Framework**, VESTA enables users to authorize an autonomous agent to execute complex DeFi operations—like swaps and liquidity management—within strictly defined safety parameters (caveats).
 
